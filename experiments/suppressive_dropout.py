@@ -3,11 +3,11 @@ import torch.nn as nn
 
 class SuppressiveDropout(nn.Module):
     """
-    CNN용 채널 단위 Suppressive Dropout (N,C,H,W).
-    논문식:
+    Channel-wise Suppressive Dropout for CNNs (N,C,H,W).
+    Paper formula:
       S_j ∝ (sum_{k≠j} x_k) * x_j^2 / (1 + b * sum_i x_i^2)^{c+1}
-    여기서 x_j는 채널 j의 공간 평균 활성화.
-    S가 큰 채널을 drop_ratio 비율만큼 0으로 만든다 (배치별 top-k).
+    where x_j is the spatially averaged activation of channel j.
+    Zeroes the drop_ratio fraction of channels with the largest S (top-k per sample).
     """
     def __init__(self, drop_ratio=0.2, b=1.0, c=1.0, eps=1e-8):
         super().__init__()
@@ -22,7 +22,7 @@ class SuppressiveDropout(nn.Module):
         assert x.dim() == 4, "Expect N,C,H,W"
         N, C, H, W = x.shape
 
-        # 채널 평균 활성화: x̄_j
+        # channel mean activation: x̄_j
         xm = x.mean(dim=(2, 3))                    # (N, C)
         x2_sum = (xm ** 2).sum(dim=1, keepdim=True)  # (N,1)
         sum_all = xm.sum(dim=1, keepdim=True)        # (N,1)
@@ -35,7 +35,7 @@ class SuppressiveDropout(nn.Module):
         _, idx = torch.topk(S, k=k, dim=1, largest=True, sorted=False)  # (N,k)
 
         mask = torch.ones((N, C), device=x.device, dtype=x.dtype)
-        mask.scatter_(1, idx, 0.0)  # 상위 S 채널 0
+        mask.scatter_(1, idx, 0.0)  # zero the top-S channels
         mask = mask.view(N, C, 1, 1)
 
         return x * mask

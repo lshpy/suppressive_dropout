@@ -40,7 +40,7 @@ def main():
     ap.add_argument("--b", type=float, default=1.0)
     ap.add_argument("--c", type=float, default=1.0)
     ap.add_argument("--save_dir", type=str, default="results/cnn_sdrop")
-    ap.add_argument("--use_sdrop", action="store_true", help="켜면 Suppressive Dropout 적용")
+    ap.add_argument("--use_sdrop", action="store_true", help="enable Suppressive Dropout")
     args = ap.parse_args()
 
     set_seed(args.seed)
@@ -64,11 +64,11 @@ def main():
               f"val_acc={val['acc']:.2f} f1M={val['f1_macro']:.3f} auc={val['auc']:.3f} ece={val['ece']:.4f}")
         logs.append(log)
 
-    # 최종 테스트
+    # Final test
     test = evaluate(model, test_loader, device)
     print(f"[TEST] acc={test['acc']:.2f} f1M={test['f1_macro']:.3f} auc={test['auc']:.3f} ece={test['ece']:.4f}")
 
-    # 저장
+    # Save
     save_logs_csv(logs, os.path.join(args.save_dir, f"r{args.drop_ratio:.2f}_b{args.b}_c{args.c}"))
     save_json(test, os.path.join(args.save_dir, f"summary_r{args.drop_ratio:.2f}_b{args.b}_c{args.c}.json"))
     os.makedirs("checkpoints", exist_ok=True)

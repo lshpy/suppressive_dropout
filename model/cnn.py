@@ -13,7 +13,7 @@ class ConvBlock(nn.Module):
 
 class SmallCNN(nn.Module):
     """
-    3-stage CNN. 중간 stage 출력 뒤 SuppressiveDropout을 '한 번만' 적용.
+    3-stage CNN. SuppressiveDropout is applied only once, after the middle stage output.
     """
     def __init__(self, num_classes=10, drop_layer=None):
         super().__init__()
@@ -23,7 +23,7 @@ class SmallCNN(nn.Module):
         self.stage2 = nn.Sequential(
             ConvBlock(64, 128), ConvBlock(128, 128), nn.MaxPool2d(2)  # 16->8
         )
-        self.sdrop = drop_layer  # 여기에만 적용
+        self.sdrop = drop_layer  # applied only here
         self.stage3 = nn.Sequential(
             ConvBlock(128, 256), ConvBlock(256, 256)
         )
@@ -35,7 +35,7 @@ class SmallCNN(nn.Module):
         x = self.stage1(x)
         x = self.stage2(x)
         if self.sdrop is not None:
-            x = self.sdrop(x)      # 🔴 단 한 번
+            x = self.sdrop(x)      # 🔴 exactly once
         x = self.stage3(x)
         x = self.head(x)
         return x

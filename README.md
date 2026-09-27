@@ -1,17 +1,40 @@
+> **Archived early prototype.** Kept for history only. The maintained Suppressive Dropout (SDrop) code is at https://github.com/lshpy/sdrop.
+
 # Suppressive Dropout (CNN, one-spot)
 
-- CIFAR-10에서 **중간 stage 한 지점**에만 Suppressive Dropout 적용.
-- 점수식: S_j ∝ (Σ_{k≠j} x_k) * x_j^2 / (1 + b Σ_i x_i^2)^{c+1}
+First prototype of Suppressive Dropout: a small CNN on CIFAR-10 with a channel-wise Suppressive Dropout layer inserted at **one point only**, after the middle stage.
 
-## Run
+## What it does
+
+- Score per channel (x_j = spatial mean activation of channel j):
+  S_j ∝ (Σ_{k≠j} x_k) * x_j^2 / (1 + b Σ_i x_i^2)^{c+1}
+- During training, the `drop_ratio` fraction of channels with the largest S_j is zeroed per sample (identity at eval time).
+- 3-stage CNN (`model/cnn.py`), Adam + StepLR, 80/20 train/validation split of the CIFAR-10 training set.
+- Logs accuracy, macro-F1, AUC and ECE per epoch on validation, then reports the test set.
+
+## How to run
+
 ```bash
 pip install -r requirements.txt
 python main.py --use_sdrop --drop_ratio 0.2 --b 1.0 --c 1.0 --epochs 30
-# 베이스라인
+# baseline
 python main.py --epochs 30
+```
 
+Outputs: per-epoch CSV and test summary JSON under `results/cnn_sdrop/`, model weights under `checkpoints/`.
 
----
+## Layout
 
-원하면 **채널 대신 공간 위치(H×W) 단위 억제**나, **여러 지점 삽입/어블레이션 스위치**도 바로 확장해줄게.  
-일단 이 버전으로 돌려보고 로그 올라오면, `drop_ratio / b / c`랑 “적용 위치” 튜닝 들어가자.
+```
+main.py                            entry point (argparse, data loaders, training loop)
+train.py / evaluate.py             one training epoch / evaluation
+experiments/suppressive_dropout.py SuppressiveDropout layer
+model/cnn.py                       3-stage CNN with one SDrop insertion point
+utils/                             metrics (acc, F1, AUC, ECE) and logging
+```
+
+## Status
+
+Early prototype; ideas noted for later were spatial (HxW) suppression instead of channels and multiple insertion points / ablation switches. No results are included in this repository.
+
+More projects: https://github.com/lshpy
